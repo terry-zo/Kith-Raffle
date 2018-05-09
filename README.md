@@ -10,7 +10,7 @@ Log in kith accounts with requests and enters through selenium.
     * **accfile** is the file name of your kith accounts.
     * **proxyfile** is the file name of your proxies.
     * **zip** is your zip code.
-    * **location** is the kith location to pick up your pairs if you win. **IMPORANT:* Please refer to **Location*
+    * **location** is the kith location to pick up your pairs if you win. **IMPORANT:* Please refer to **Location**
   * Secondly, you must install the modules required for the script to work. Please refer to **Required modules**.
 
 
