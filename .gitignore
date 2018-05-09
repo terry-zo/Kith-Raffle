@@ -56,6 +56,3 @@ $RECYCLE.BIN/
 
 
 # End of https://www.gitignore.io/api/windows,sublimetext
-*.txt
-accounts.txt
-*.json
