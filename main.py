@@ -130,7 +130,7 @@ def enter_raffle(queue_, q_lock_, accs_tuple, acc_lock_, acc_lock, p_list, p_loc
                 }, proxies={"https": rand_proxy}, timeout=30)
                 log("Successfully logged in (" + resp.cookies["secure_customer_sig"] + ")")
                 unlock_p(rand_proxy)
-                driver = webdriver.Chrome()
+                driver = webdriver.Chrome("chromedriver.exe")
                 driver.get("https://kith.com/pages/customer-drawing")
                 for c in s.cookies:
                     driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
