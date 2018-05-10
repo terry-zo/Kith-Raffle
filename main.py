@@ -169,54 +169,59 @@ def error_restart(driver, rand_acc_list):
 
 def enter_raffle(accs_tuple, url):
     global zip_, loc_, queue_, q_lock_, acc_lock_, acc_lock, p_list, p_lock_, p_lock
-    driver = webdriver.Chrome("chromedriver")
+    driver = webdriver.Chrome("chromedriver.exe")
     driver.get(url)
     while queue_.qsize() > 0:
-        print("Accounts left: " + str(queue_.qsize()))
-        with q_lock_:
-            queue_.get()
-        rand_proxy = choice(p_list)
-        if not rand_proxy in p_lock:
-            with p_lock_:
-                p_lock.append(rand_proxy)
-                print("Using proxy: " + str(rand_proxy))
-            rand_acc_list = choice(accs_tuple)
-            if not rand_acc_list in acc_lock:
-                with acc_lock_:
-                    acc_lock.append(rand_acc_list)
-                log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy, driver)
-                for c in log_cookies_:
-                    driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
-                driver.get(url)
-                time.sleep(2)
-                try:
-                    if (not checkentry(driver.page_source)):
-                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[3]/input[1]"))).send_keys(zip_)
-                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + str(choice(range(2, 20))) + "]"))).click()
-                        loc = "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"
-                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
-                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
-                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
-                        time.sleep(2)
-                        if checkentry(driver.page_source):
-                            log("Successfully entered raffle.")
-                            driver.delete_all_cookies()
-                            driver.refresh()
-                            with w_lock:
-                                with open("Entered.txt", "a+") as etxt:
-                                    etxt.write(rand_acc_list[0] + ":" + rand_acc_list[1] + "\n")
+        try:
+            print("Accounts left: " + str(queue_.qsize()))
+            with q_lock_:
+                queue_.get()
+            rand_proxy = choice(p_list)
+            if not rand_proxy in p_lock:
+                with p_lock_:
+                    p_lock.append(rand_proxy)
+                    print("Using proxy: " + str(rand_proxy))
+                rand_acc_list = choice(accs_tuple)
+                if not rand_acc_list in acc_lock:
+                    with acc_lock_:
+                        acc_lock.append(rand_acc_list)
+                    log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy, driver)
+                    for c in log_cookies_:
+                        driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
+                    driver.get(url)
+                    time.sleep(2)
+                    try:
+                        if (not checkentry(driver.page_source)):
+                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[3]/input[1]"))).send_keys(zip_)
+                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + str(choice(range(2, 20))) + "]"))).click()
+                            loc = "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"
+                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
+                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
+                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
+                            time.sleep(2)
+                            if checkentry(driver.page_source):
+                                log("Successfully entered raffle.")
+                                driver.delete_all_cookies()
+                                driver.refresh()
+                                with w_lock:
+                                    with open("Entered.txt", "a+") as etxt:
+                                        etxt.write(rand_acc_list[0] + ":" + rand_acc_list[1] + "\n")
+                            else:
+                                log("Failed to enter raffle.")
+                                error_restart(driver, rand_acc_list)
                         else:
-                            log("Failed to enter raffle.")
-                            error_restart(driver, rand_acc_list)
-                    else:
-                        log("Account already entered into raffle.")
-                except (Exception, KeyError, TimeoutException, NoSuchElementException, WebDriverException, TypeError):
-                    log("Caught an error.")
-                    error_restart(driver, rand_acc_list)
+                            log("Account already entered into raffle.")
+                    except (Exception, KeyError, TimeoutException, NoSuchElementException, WebDriverException, TypeError):
+                        log("Caught an error.")
+                        error_restart(driver, rand_acc_list)
+                else:
+                    with q_lock_:
+                        queue_.put(1)
             else:
                 with q_lock_:
                     queue_.put(1)
-        else:
+        except Exception:
+            error_restart(driver, rand_acc_list)
             with q_lock_:
                 queue_.put(1)
 
