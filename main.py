@@ -169,7 +169,38 @@ def error_restart(driver, rand_acc_list):
 
 def enter_raffle(accs_tuple, url):
     global zip_, loc_, queue_, q_lock_, acc_lock_, acc_lock, p_list, p_lock_, p_lock
-    driver = webdriver.Chrome("chromedriver.exe")
+    driver_proxy = choice(p_list)
+    if driver_proxy != None:
+        proxy_parts = (driver_proxy.split("http://")[1]).split(":")
+        # [username][password@ip][port]
+        # [ip][port]
+        if len(proxy_parts) == 3:
+            options = webdriver.ChromeOptions()
+            PROXY = ((((proxy_parts[1].split("@"))[1]) + ":" + proxy_parts[2]))  # IP:PORT
+            print("Driver using Auth proxy: " + PROXY)
+            options.add_extension("Proxy_Auth.crx")
+            options.add_argument("--proxy-server=http://{}".format(PROXY))
+            driver = webdriver.Chrome(chrome_options=options)
+            main_window = driver.window_handles[0]
+            second_window = driver.window_handles[1]
+            driver.switch_to_window(second_window)
+            driver.close()
+            driver.switch_to_window(main_window)
+            driver.get("chrome-extension://ggmdpepbjljkkkdaklfihhngmmgmpggp/options.html")
+            driver.find_element_by_id("login").send_keys(proxy_parts[0])
+            driver.find_element_by_id("password").send_keys((proxy_parts[1].split("@"))[0])
+            driver.find_element_by_id("retry").clear()
+            driver.find_element_by_id("retry").send_keys("2")
+            driver.find_element_by_id("save").click()
+        if len(proxy_parts) == 2:
+            proxy = ':'.join(proxy_parts)
+            print ("Driver using No-Auth proxy: " + proxy)
+            chrome_options = webdriver.ChromeOptions()
+            chrome_options.add_argument('--proxy-server=%s' % proxy)
+            driver = webdriver.Chrome(chrome_options=chrome_options)
+    else:
+        print "Driver using no proxy!"
+        driver = webdriver.Chrome()
     driver.get(url)
     while queue_.qsize() > 0:
         try:
