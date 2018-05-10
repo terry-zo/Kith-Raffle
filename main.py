@@ -99,67 +99,20 @@ def unlock_a(email):
             print("Unlocked account: " + email)
 
 
-# def request_recaptcha(driver, rand_acc_list):
-#     global service_key, google_site_key, captcha_url
-#     url = "http://2captcha.com/in.php?key=" + service_key + "&method=userrecaptcha&googlekey=" + google_site_key + "&pageurl=" + captcha_url
-#     resp = requests.get(url)
-#     if resp.text[0:2] != 'OK':
-#         log("Error: {} Exiting...".format(resp.text))
-#         sys.exit()
-#     captcha_id = resp.text[3:]
-#     print("Successfully requested for captcha.")
-#     return captcha_id
-
-
-# def receive_token(driver, rand_acc_list, captcha_id):
-#     global service_key
-#     fetch_url = "http://2captcha.com/res.php?key=" + service_key + "&action=get&id=" + captcha_id
-#     for count in range(1, 26):
-#         print("Attempting to fetch token. {}/25".format(count))
-#         resp = requests.get(fetch_url)
-#         if resp.text[0:2] == 'OK':
-#             grt = resp.text.split('|')[1]  # g-recaptcha-token
-#             print("Captcha token received.")
-#             return grt
-#         time.sleep(5)
-#     print("No tokens received. Restarting...")
-#     receive_token(driver, rand_acc_list, captcha_id)
-
-
-# def submit_recaptcha(grt, at, session, rand_proxy):
-#     payload = {
-#         "authenticity_token": at,
-#         "g-recaptcha-response": grt
-#     }
-#     headers = {
-#         "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-#         "Accept-Encoding": "gzip, deflate, br",
-#         "Accept-Language": "en-US,en;q=0.9",
-#         "Content-Type": "application/x-www-form-urlencoded",
-#         "Host": "kith.com",
-#         "Referer": "https://kith.com/challenge",
-#         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
-#     }
-#     resp = session.post('https://kith.com/account', headers=headers, data=payload, proxies={"https": rand_proxy}, timeout=30)
-#     return resp
-
-
-# def grabauthkey(challenge_html, driver, rand_acc_list):
-#     page_soup = soup(challenge_html, 'html.parser')
-#     authtokenvar = page_soup.findAll("input", {"name": "authenticity_token"})
-#     if authtokenvar:
-#         authtoken = authtokenvar[0]["value"]
-#         print("Authenticity token found.")
-#         return authtoken
-#     else:
-#         log("No authenticity token found. Restarting...")
-#         error_restart(driver, rand_acc_list)
+def grabauthkey(challenge_html):
+    page_soup = soup(challenge_html, 'lxml')
+    authtokenvar = page_soup.findAll("input", {"name": "authenticity_token"})
+    if authtokenvar:
+        authtoken = authtokenvar[0]["value"]
+        return authtoken
+    else:
+        return("Nope")
 
 
 def get_log_cookie(rand_acc_list, rand_proxy, driver):
     print("Logging in " + rand_acc_list[0])
     with requests.Session() as s:
-        resp = s.post("https://kith.com/account/login", headers={
+        s.post("https://kith.com/account/login", headers={
             "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
             "Accept-Encoding": "gzip, deflate, br",
             "Accept-Language": "en-US,en;q=0.9",
@@ -168,29 +121,40 @@ def get_log_cookie(rand_acc_list, rand_proxy, driver):
             "Host": "kith.com",
             "Origin": "https://kith.com",
             "Referer": "https://kith.com/account/login?redirect=/pages/customer-raffle",
-            "Upgrade-Insecure-Requests": "1",
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
         }, data={
             "form_type": "customer_login",
             "customer[email]": rand_acc_list[0],
             "customer[password]": rand_acc_list[1],
-            "checkout_url": " /pages/customer-raffle"
-        }, proxies={"https": rand_proxy}, timeout=30, allow_redirects=True)  # false for captcha
-        if resp.status_code == 200:
-            log("Successfully logged in.")
+            "checkout_url": "/pages/customer-raffle"
+        }, proxies={"https": rand_proxy}, timeout=30)  # false for captcha
+        challenge = s.get('https://kith.com/challenge', proxies={"https": rand_proxy})
+        challenge_html = challenge.content
+        authtoken = grabauthkey(challenge_html)
+        if authtoken != "Nope":  # captcha required
+            print("Authenticity token found.")
+            r_c = captcha_harvester()
+            payload = {
+                "authenticity_token": authtoken,
+                "g-recaptcha-response": r_c
+            }
+            headers = {
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Host": "kith.com",
+                "Origin": "https://kith.com",
+                "Referer": "https://kith.com/challenge",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
+            }
+            resp = s.post('https://kith.com/account/login', headers=headers, data=payload, proxies={"https": rand_proxy}, timeout=30)
+            print("Successfully logged in with captcha. S_C: " + str(resp.status_code))
             unlock_p(rand_proxy)
             return s.cookies
-        # if resp.status_code == 302:
-        #     print("Captcha Required.")
-        #     captcha_id = request_recaptcha(driver, rand_acc_list)
-        #     grt = receive_token(driver, rand_acc_list, captcha_id)
-        #     challenge = s.get('https://kith.com/challenge', proxies={"https": rand_proxy}, timeout=30)
-        #     challenge_html = challenge.content
-        #     authtoken = grabauthkey(challenge_html, driver, rand_acc_list)
-        #     submit_recaptcha(grt, authtoken, s, rand_proxy)
-        else:
-            log("Failed to get cookies.")
-            error_restart(driver, rand_acc_list)
+        else:  # no captcha required
+            print("Successfully logged in.")
+            unlock_p(rand_proxy)
+            return s.cookies
 
 
 def error_restart(driver, rand_acc_list):
@@ -224,15 +188,16 @@ def enter_raffle(accs_tuple, url):
                 for c in log_cookies_:
                     driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
                 driver.get(url)
+                time.sleep(2)
                 try:
-                    if not checkentry(driver.page_source):
-                        WebDriverWait(driver, 4).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[3]/input[1]"))).send_keys(zip_)
-                        WebDriverWait(driver, 4).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + str(choice(range(2, 20))) + "]"))).click()
+                    if (not checkentry(driver.page_source)):
+                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[3]/input[1]"))).send_keys(zip_)
+                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + str(choice(range(2, 20))) + "]"))).click()
                         loc = "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"
-                        WebDriverWait(driver, 4).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
-                        WebDriverWait(driver, 4).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
-                        WebDriverWait(driver, 4).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
-                        time.sleep(3)
+                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
+                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
+                        WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
+                        time.sleep(2)
                         if checkentry(driver.page_source):
                             log("Successfully entered raffle.")
                             driver.delete_all_cookies()
@@ -256,13 +221,52 @@ def enter_raffle(accs_tuple, url):
                 queue_.put(1)
 
 
+def captcha_harvester():
+    with requests.session() as c_s:
+        captcha_id = request_recaptcha(c_s)
+        token = receive_token(captcha_id, c_s)
+        print("Token received.")
+        return token
+
+
+def request_recaptcha(session):
+    global service_key, google_site_key, captcha_url
+    url = "http://2captcha.com/in.php?key=" + service_key + "&method=userrecaptcha&googlekey=" + google_site_key + "&pageurl=" + captcha_url
+    resp = session.get(url)
+    if resp.text[0:2] != 'OK':
+        log("Error: {} Exiting...".format(resp.text))
+    captcha_id = resp.text[3:]
+    print("Successfully requested for captcha.")
+    return captcha_id
+
+
+def receive_token(captcha_id, session):
+    global service_key
+    fetch_url = "http://2captcha.com/res.php?key=" + service_key + "&action=get&id=" + captcha_id
+    for count in range(1, 26):
+        print("Attempting to fetch token. {}/25".format(count))
+        resp = session.get(fetch_url)
+        if resp.text[0:2] == 'OK':
+            grt = resp.text.split('|')[1]  # g-recaptcha-token
+            print("Captcha token received.")
+            return grt
+        time.sleep(5)
+    print("No tokens received. Restarting...")
+    receive_token(captcha_id, session)
+
+
 def wrapper_(accs_tuple, url):
-    global queue_, q_lock_, acc_lock_, acc_lock, p_list, p_lock_, p_lock
+    global queue_, q_lock_
     num_of_accs = len(accs_tuple)
     for index in range(num_of_accs):
         with q_lock_:
             queue_.put(index)
     st = time.time()
+    # t_list = []
+    # t_list.append(Thread(target=enter_raffle, args=(accs_tuple, url)))
+    # for t_ in t_list:
+    #     t_.start()
+    #     t_.join()
     enter_raffle(accs_tuple, url)
     log("Finished in " + str(time.time() - st))
 
@@ -284,5 +288,6 @@ if __name__ == "__main__":
     service_key = config["captchakey"]
     google_site_key = config["sitekey"]
     captcha_url = config["captchasite"]
-
+    # c_list = []
+    # c_lock = Lock()
     wrapper_(accs_tuple, url)
