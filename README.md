@@ -58,6 +58,10 @@ pip install requests bs4 lxml selenium
     * **Kith Miami** is **"3"**
     * **Kith LA** is **"4"**
 
+## To-do List
+
+  * Implement [Google Sheets API](https://developers.google.com/sheets/api/quickstart/python)
+
 ## Other scripts
 
 I _might or might not_ release more scripts on my [twitter](https://twitter.com/zoegodterry).
