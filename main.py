@@ -168,7 +168,7 @@ def error_restart(driver, rand_acc_list):
 
 
 def enter_raffle(accs_tuple, url):
-    global zip_, loc_, queue_, q_lock_, acc_lock_, acc_lock, p_list, p_lock_, p_lock
+    global zip_, loc_, queue_, q_lock_, acc_lock_, acc_lock, p_list, p_lock_, p_lock, s_size, actual_loc
     driver_proxy = choice(p_list)
     if driver_proxy != None:
         proxy_parts = (driver_proxy.split("http://")[1]).split(":")
@@ -224,11 +224,12 @@ def enter_raffle(accs_tuple, url):
                     try:
                         if (not checkentry(driver.page_source)):
                             WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[3]/input[1]"))).send_keys(zip_)
-                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + str(choice(range(2, 20))) + "]"))).click()
-                            loc = "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"
-                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
-                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
-                            WebDriverWait(driver, 6).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
+                            random_sz_num = str(choice(range(2, 20)))
+                            actual_sz = s_size[random_sz_num]
+                            WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[4]/select[1]/option[" + random_sz_num + "]"))).click()
+                            WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[5]/select[1]/option[" + str(loc_) + "]"))).click()
+                            WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).click()
+                            WebDriverWait(driver, 3).until(EC.presence_of_element_located((By.XPATH, "/html[1]/body[1]/div[8]/div[1]/main[1]/div[1]/div[1]/div[3]/div[1]/div[1]/div[1]/div[3]/form[1]/div[7]/input[1]"))).submit()
                             time.sleep(2)
                             if checkentry(driver.page_source):
                                 log("Successfully entered raffle.")
@@ -236,7 +237,9 @@ def enter_raffle(accs_tuple, url):
                                 driver.refresh()
                                 with w_lock:
                                     with open("Entered.txt", "a+") as etxt:
-                                        etxt.write(rand_acc_list[0] + ":" + rand_acc_list[1] + "\n")
+                                        etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
+                                    with open("Entered_Detailed.txt", "a+") as etxt:
+                                        etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], actual_sz, actual_loc))
                             else:
                                 log("Failed to enter raffle.")
                                 error_restart(driver, rand_acc_list)
@@ -298,11 +301,6 @@ def wrapper_(accs_tuple, url):
         with q_lock_:
             queue_.put(index)
     st = time.time()
-    # t_list = []
-    # t_list.append(Thread(target=enter_raffle, args=(accs_tuple, url)))
-    # for t_ in t_list:
-    #     t_.start()
-    #     t_.join()
     enter_raffle(accs_tuple, url)
     log("Finished in " + str(time.time() - st))
 
@@ -325,11 +323,36 @@ if __name__ == "__main__":
     service_key = config["captchakey"]
     google_site_key = config["sitekey"]
     captcha_url = config["captchasite"]
-    # c_list = []
-    # c_lock = Lock()
     accs_tuple = []
     for accs_ in raw_accs_tuple:
         if not(accs_ in e_acc):
             accs_tuple.append(accs_)
     accs_tuple = tuple(accs_tuple)
+    s_size = {
+        "2": "4",
+        "3": "4.5",
+        "4": "5",
+        "5": "5.5",
+        "6": "6",
+        "7": "6.5",
+        "8": "7",
+        "9": "7.5",
+        "10": "8",
+        "11": "8.5",
+        "12": "9",
+        "13": "9.5",
+        "14": "10",
+        "15": "10.5",
+        "16": "11",
+        "17": "11.5",
+        "18": "12",
+        "19": "13"
+    }
+    r_locs = {
+        "1": "Kith SoHo",
+        "2": "Kith Brooklyn",
+        "3": "Kith Miami",
+        "4": "Kith LA"
+    }
+    actual_loc = r_locs[config["location"]]
     wrapper_(accs_tuple, url)

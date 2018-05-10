@@ -53,8 +53,6 @@ $RECYCLE.BIN/
 
 # Windows shortcuts
 *.lnk
-*.txt
-accounts.txt
 *.json
 
 # End of https://www.gitignore.io/api/windows,sublimetext

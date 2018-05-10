@@ -2,9 +2,9 @@
     "url":"https://kith.com/pages/customer-drawing",
     "accfile": "Accounts.txt",
     "proxyfile":"Proxies.txt",
-    "zip":"xxxxx",
+    "zip":"-----",
     "location":"1",
-    "captchakey":"-----------------------------",
+    "captchakey":"---------------------------------",
     "sitekey":"6LeoeSkTAAAAAA9rkZs5oS82l69OEYjKRZAiKdaF",
     "captchasite":"https://kith.com/challenge"
 }
