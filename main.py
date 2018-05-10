@@ -311,10 +311,11 @@ if __name__ == "__main__":
     config = readconfig("config.json")
     w_lock = Lock()
     q_lock_ = Lock()
-    accs_tuple = loadaccs(readfile(config["accfile"]))
+    raw_accs_tuple = loadaccs(readfile(config["accfile"]))
     acc_lock_ = Lock()
     acc_lock = []
     p_list = readproxyfile(config["proxyfile"])
+    e_acc = loadaccs(readfile("Entered.txt"))
     p_lock_ = Lock()
     p_lock = []
     queue_ = Queue.Queue()
@@ -326,4 +327,9 @@ if __name__ == "__main__":
     captcha_url = config["captchasite"]
     # c_list = []
     # c_lock = Lock()
+    accs_tuple = []
+    for accs_ in raw_accs_tuple:
+        if not(accs_ in e_acc):
+            accs_tuple.append(accs_)
+    accs_tuple = tuple(accs_tuple)
     wrapper_(accs_tuple, url)
