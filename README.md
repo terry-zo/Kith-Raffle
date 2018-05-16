@@ -46,12 +46,12 @@ _Proxies implemented 5-8-18_
 ## Required modules
 
 Before running the script, the following modules are required:
-```requests bs4 lxml selenium```
+```requests bs4 lxml selenium colorama```
 
 This can be accomplished by running the following command in a command prompt:
 
 ```
-pip install requests bs4 lxml selenium
+pip install requests bs4 lxml selenium colorama
 ```
 
 ## Location
