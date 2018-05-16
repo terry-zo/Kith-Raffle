@@ -30,7 +30,8 @@ class sel():
         WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//option[@value=\'" + str(actual_sz) + "\']"))).click()  # size
         WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//option[@value=\'" + str(GLOBAL_VARIABLES["loc_"]) + "\']"))).click()  # location
         WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//input[@id='agreeToTerms']"))).click()  # terms
-        WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//button[@type='submit']"))).click()  # submit button
+        WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//input[@id='agreeToTerms']"))).submit()  # terms
+        # WebDriverWait(self.driver, 3).until(EC.presence_of_element_located((By.XPATH, "//button[@type='submit']"))).click()  # submit button
         time.sleep(2)
 
     def refresh(self):

@@ -104,7 +104,6 @@ def get_log_cookie(rand_acc_list, rand_proxy):
         if (KITH_RESP.url == "https://kith.com/challenge") or (KITH_RESP.url == "https://kith.com/challenge/"):  # captcha required
             r_c = captcha_harvester()
             authtoken = grabauthkey(KITH_RESP.content)
-            print authtoken
             payload = {
                 "authenticity_token": authtoken,
                 "g-recaptcha-response": r_c
