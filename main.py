@@ -61,7 +61,6 @@ def unlock_p(rand_proxy):
     if rand_proxy in GLOBAL_VARIABLES["p_ll"]:
         with GLOBAL_VARIABLES["p_lock_"]:
             GLOBAL_VARIABLES["p_ll"].remove(rand_proxy)
-            print("Released proxy: " + str(rand_proxy))
 
 
 def unlock_a(email):
@@ -143,50 +142,50 @@ def enter_raffle(accs_tuple, url):
     thread_driver.CreateHeadlessBrowser(driver_proxy)
     thread_driver.driver.get(url)
     while GLOBAL_VARIABLES["queue_"].qsize() > 0:
-        # try:
-        print("Accounts left: " + str(GLOBAL_VARIABLES["queue_"].qsize()))
-        with GLOBAL_VARIABLES["q_lock_"]:
-            GLOBAL_VARIABLES["queue_"].get()
-        rand_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
-        if not rand_proxy in GLOBAL_VARIABLES["p_ll"]:
-            with GLOBAL_VARIABLES["p_lock_"]:
-                GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
-                print("Using proxy: " + str(rand_proxy))
-            rand_acc_list = choice(accs_tuple)
-            if not rand_acc_list in GLOBAL_VARIABLES["acc_ll"]:
-                with GLOBAL_VARIABLES["acc_lock_"]:
-                    GLOBAL_VARIABLES["acc_ll"].append(rand_acc_list)
-                log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
-                for c in log_cookies_:
-                    thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
-                thread_driver.driver.get(url)
-                sleep(2)
-                if (not thread_driver.checkentry()):
-                    rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
-                    thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
-                    if thread_driver.checkentry():
-                        print("Successfully entered raffle.")
-                        thread_driver.refresh()
-                        with GLOBAL_VARIABLES["w_lock"]:
-                            with open("config/Entered.txt", "a+") as etxt:
-                                etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
-                            with open("config/Entered_Detailed.txt", "a+") as etxt:
-                                etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
+        try:
+            print("Accounts left: " + str(GLOBAL_VARIABLES["queue_"].qsize()))
+            with GLOBAL_VARIABLES["q_lock_"]:
+                GLOBAL_VARIABLES["queue_"].get()
+            rand_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
+            if not rand_proxy in GLOBAL_VARIABLES["p_ll"]:
+                with GLOBAL_VARIABLES["p_lock_"]:
+                    GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
+                    print("Using proxy: " + str(rand_proxy))
+                rand_acc_list = choice(accs_tuple)
+                if not rand_acc_list in GLOBAL_VARIABLES["acc_ll"]:
+                    with GLOBAL_VARIABLES["acc_lock_"]:
+                        GLOBAL_VARIABLES["acc_ll"].append(rand_acc_list)
+                    log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
+                    for c in log_cookies_:
+                        thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
+                    thread_driver.driver.get(url)
+                    sleep(2)
+                    if (not thread_driver.checkentry()):
+                        rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
+                        thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
+                        if thread_driver.checkentry():
+                            print("Successfully entered raffle.")
+                            thread_driver.refresh()
+                            with GLOBAL_VARIABLES["w_lock"]:
+                                with open("config/Entered.txt", "a+") as etxt:
+                                    etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
+                                with open("config/Entered_Detailed.txt", "a+") as etxt:
+                                    etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
+                        else:
+                            print("Failed to enter raffle.")
+                            error_restart(thread_driver, rand_acc_list)
                     else:
-                        print("Failed to enter raffle.")
-                        error_restart(driver, rand_acc_list)
+                        print("Account already entered into raffle.")
                 else:
-                    print("Account already entered into raffle.")
+                    with GLOBAL_VARIABLES["q_lock_"]:
+                        GLOBAL_VARIABLES["queue_"].put(1)
             else:
                 with GLOBAL_VARIABLES["q_lock_"]:
                     GLOBAL_VARIABLES["queue_"].put(1)
-        else:
+        except (Exception, KeyError, TimeoutException, NoSuchElementException, WebDriverException, TypeError):
+            print("Caught an error.")
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].put(1)
-        # except (Exception, KeyError, TimeoutException, NoSuchElementException, WebDriverException, TypeError):
-        #     print("Caught an error.")
-        #     with GLOBAL_VARIABLES["q_lock_"]:
-        #         GLOBAL_VARIABLES["queue_"].put(1)
 
 
 def captcha_harvester():
