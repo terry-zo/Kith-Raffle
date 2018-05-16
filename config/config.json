@@ -1,0 +1,10 @@
+{
+    "url":"https://kith.com/pages/customer-drawing",
+    "accfile": "Accounts.txt",
+    "proxyfile":"Proxies.txt",
+    "zip":"12345",
+    "location":"brooklyn",
+    "captchakey":"-------------------------",
+    "sitekey":"6LeoeSkTAAAAAA9rkZs5oS82l69OEYjKRZAiKdaF",
+    "captchasite":"https://kith.com/challenge"
+}
