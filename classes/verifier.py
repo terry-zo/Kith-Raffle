@@ -24,5 +24,5 @@ def verifier(proxy, email):
             print("Account does not exist: {}".format(str(email)))
             return(False)
     else:
-        print("Proxy banned.")
+        print("Proxy blocked from sending requests.")
         return("banned")

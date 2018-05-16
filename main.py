@@ -87,20 +87,6 @@ def get_log_cookie(rand_acc_list, rand_proxy):
     is_verified = verifier(rand_proxy, rand_acc_list[0])
     if is_verified == True:
         with requests.Session() as s:
-            KITH_ACC_EXIST = s.post("https://kith.com/account/recover", headers={
-                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-                "Accept-Encoding": "gzip, deflate, br",
-                "Accept-Language": "en-US,en;q=0.9",
-                "Content-Type": "application/x-www-form-urlencoded",
-                "Host": "kith.com",
-                        "Origin": "https://kith.com",
-                        "Referer": "https://kith.com/account/login",
-                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.170 Safari/537.36"
-            }, data={
-                "form_type": "recover_customer_password",
-                "email": rand_acc_list[0],
-            }, proxies={"https": rand_proxy}, timeout=30)  # false for captcha
-
             KITH_RESP = s.post("https://kith.com/account/login", headers={
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Encoding": "gzip, deflate, br",
@@ -170,37 +156,42 @@ def enter_raffle(accs_tuple, url):
                 with GLOBAL_VARIABLES["p_lock_"]:
                     GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
                     print("Using proxy: " + str(rand_proxy))
-                rand_acc_list = choice(accs_tuple)
-                with GLOBAL_VARIABLES["acc_lock_"]:
-                    accs_tuple = accs_tuple[:accs_tuple.index(rand_acc_list)] + accs_tuple[(accs_tuple.index(rand_acc_list) + 1):]
-                log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
-                if (log_cookies_ != False) and (log_cookies_ != "banned"):
-                    for c in log_cookies_:
-                        thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
-                    thread_driver.driver.get(url)
-                    sleep(2)
-                    if (not thread_driver.checkentry()):
-                        rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
-                        thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
-                        if thread_driver.checkentry():
-                            print("Successfully entered raffle.")
-                            thread_driver.refresh()
-                            with GLOBAL_VARIABLES["w_lock"]:
-                                with open("config/Entered.txt", "a+") as etxt:
-                                    etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
-                                with open("config/Entered_Detailed.txt", "a+") as etxt:
-                                    etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
-                        else:
-                            print("Failed to enter raffle.")
-                            error_restart(thread_driver, rand_acc_list)
-                    else:
-                        print("Account already entered into raffle.")
-                elif log_cookies_ == "banned":
+                if len(accs_tuple) != 0:
+                    rand_acc_list = choice(accs_tuple)
                     with GLOBAL_VARIABLES["acc_lock_"]:
-                        accs_tuple = accs_tuple + tuple(rand_acc_list)
+                        accs_tuple = accs_tuple[:accs_tuple.index(rand_acc_list)] + accs_tuple[(accs_tuple.index(rand_acc_list) + 1):]
+                    log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
+                    if (log_cookies_ != False) and (log_cookies_ != "banned"):
+                        for c in log_cookies_:
+                            thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
+                        thread_driver.driver.get(url)
+                        sleep(2)
+                        if (not thread_driver.checkentry()):
+                            rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
+                            thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
+                            if thread_driver.checkentry():
+                                print("Successfully entered raffle.")
+                                thread_driver.refresh()
+                                with GLOBAL_VARIABLES["w_lock"]:
+                                    with open("config/Entered.txt", "a+") as etxt:
+                                        etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
+                                    with open("config/Entered_Detailed.txt", "a+") as etxt:
+                                        etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
+                            else:
+                                print("Failed to enter raffle.")
+                                error_restart(thread_driver, rand_acc_list)
+                        else:
+                            print("Account already entered into raffle.")
+                    elif log_cookies_ == "banned":
+                        with GLOBAL_VARIABLES["acc_lock_"]:
+                            accs_tuple = accs_tuple + tuple(rand_acc_list)
+                else:
+                    print("Selected proxy is in use.")
+                    with GLOBAL_VARIABLES["q_lock_"]:
+                        GLOBAL_VARIABLES["queue_"].put(1)
             else:
-                with GLOBAL_VARIABLES["q_lock_"]:
-                    GLOBAL_VARIABLES["queue_"].put(1)
+                print("Finished all accounts.")
+                sys.exit()
         except:
             print("Caught an error.")
             with GLOBAL_VARIABLES["q_lock_"]:
