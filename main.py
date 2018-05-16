@@ -182,7 +182,7 @@ def enter_raffle(accs_tuple, url):
             else:
                 with GLOBAL_VARIABLES["q_lock_"]:
                     GLOBAL_VARIABLES["queue_"].put(1)
-        except (Exception, KeyError, TimeoutException, NoSuchElementException, WebDriverException, TypeError):
+        except:
             print("Caught an error.")
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].put(1)
