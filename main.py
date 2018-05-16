@@ -73,17 +73,12 @@ def readfile(rawfile):
 
 def unlock_p(rand_proxy):
     global GLOBAL_VARIABLES
-    if rand_proxy in GLOBAL_VARIABLES["p_ll"]:
-        with GLOBAL_VARIABLES["p_lock_"]:
-            GLOBAL_VARIABLES["p_ll"].remove(rand_proxy)
-
-
-def unlock_a(email):
-    global GLOBAL_VARIABLES
-    if email in GLOBAL_VARIABLES["acc_ll"]:
-        with GLOBAL_VARIABLES["acc_lock_"]:
-            GLOBAL_VARIABLES["acc_ll"].remove(email)
-            log("Unlocked account: " + email)
+    try:
+        if rand_proxy in GLOBAL_VARIABLES["p_ll"]:
+            with GLOBAL_VARIABLES["p_lock_"]:
+                GLOBAL_VARIABLES["p_ll"].remove(rand_proxy)
+    except Exception:
+        pass
 
 
 def grabauthkey(challenge_html):
@@ -145,15 +140,6 @@ def get_log_cookie(rand_acc_list, rand_proxy):
         return is_verified
 
 
-def error_restart(thread_driver, rand_acc_list):
-    global GLOBAL_VARIABLES
-    thread_driver.refresh()
-    with GLOBAL_VARIABLES["q_lock_"]:
-        GLOBAL_VARIABLES["queue_"].put(1)
-    with GLOBAL_VARIABLES["acc_lock_"]:
-        unlock_a(rand_acc_list[0])
-
-
 def enter_raffle(accs_tuple, url):
     global GLOBAL_VARIABLES, GLOBAL_DATA
     driver_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
@@ -166,10 +152,9 @@ def enter_raffle(accs_tuple, url):
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].get()
             rand_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
-            if not rand_proxy in GLOBAL_VARIABLES["p_ll"]:
+            if not (rand_proxy in GLOBAL_VARIABLES["p_ll"]):
                 with GLOBAL_VARIABLES["p_lock_"]:
                     GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
-                    log("Using proxy: " + str(rand_proxy))
                 if len(accs_tuple) != 0:
                     rand_acc_list = choice(accs_tuple)
                     with GLOBAL_VARIABLES["acc_lock_"]:
@@ -191,14 +176,15 @@ def enter_raffle(accs_tuple, url):
                                         etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
                                     with open("config/Entered_Detailed.txt", "a+") as etxt:
                                         etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
+                                unlock_p(rand_proxy)
                             else:
                                 log("Failed to enter raffle.", "Error")
-                                error_restart(thread_driver, rand_acc_list)
+                                raise
                         else:
-                            log("Account already entered into raffle.", "Error")
+                            log("Account already entered into raffle.", "Success")
+                            unlock_p(rand_proxy)
                     elif log_cookies_ == "banned":
-                        with GLOBAL_VARIABLES["acc_lock_"]:
-                            accs_tuple = accs_tuple + tuple(rand_acc_list)
+                        raise
                 else:
                     log("Finished all accounts.", "Success")
                     sys.exit()
@@ -210,7 +196,9 @@ def enter_raffle(accs_tuple, url):
             log("Caught an error.", "Error")
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].put(1)
-            accs_tuple = accs_tuple + tuple(rand_acc_list)
+            with GLOBAL_VARIABLES["acc_lock_"]:
+                accs_tuple = accs_tuple + tuple(rand_acc_list)
+            unlock_p(rand_proxy)
     thread_driver.end_session()
 
 
@@ -277,7 +265,6 @@ if __name__ == "__main__":
         "acc_lock_": Lock(),
         "p_lock_": Lock(),
         "print": Lock(),
-        "acc_ll": [],
         "p_ll": [],
         "queue_": Queue(),
         "url": config["url"],
