@@ -4,6 +4,7 @@ import sys
 sys.path.append("config")
 sys.path.append("classes")
 from sel_kith import *
+from verifier import *
 from Queue import Queue
 from time import time, sleep
 from bs4 import BeautifulSoup as soup
@@ -83,47 +84,65 @@ def grabauthkey(challenge_html):
 
 def get_log_cookie(rand_acc_list, rand_proxy):
     print("Logging in " + rand_acc_list[0])
-    with requests.Session() as s:
-        KITH_RESP = s.post("https://kith.com/account/login", headers={
-            "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
-            "Accept-Encoding": "gzip, deflate, br",
-            "Accept-Language": "en-US,en;q=0.9",
-            "Connection": "keep-alive",
-            "Content-Type": "application/x-www-form-urlencoded",
-            "Host": "kith.com",
-            "Origin": "https://kith.com",
-            "Referer": "https://kith.com/account/login?redirect=/pages/customer-raffle",
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
-        }, data={
-            "form_type": "customer_login",
-            "customer[email]": rand_acc_list[0],
-            "customer[password]": rand_acc_list[1],
-            "checkout_url": "/pages/customer-raffle"
-        }, proxies={"https": rand_proxy}, timeout=30)  # false for captcha
-        if (KITH_RESP.url == "https://kith.com/challenge") or (KITH_RESP.url == "https://kith.com/challenge/"):  # captcha required
-            r_c = captcha_harvester()
-            authtoken = grabauthkey(KITH_RESP.content)
-            payload = {
-                "authenticity_token": authtoken,
-                "g-recaptcha-response": r_c
-            }
-            headers = {
+    is_verified = verifier(rand_proxy, rand_acc_list[0])
+    if is_verified == True:
+        with requests.Session() as s:
+            KITH_ACC_EXIST = s.post("https://kith.com/account/recover", headers={
                 "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
                 "Accept-Encoding": "gzip, deflate, br",
                 "Accept-Language": "en-US,en;q=0.9",
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Host": "kith.com",
+                        "Origin": "https://kith.com",
+                        "Referer": "https://kith.com/account/login",
+                        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.170 Safari/537.36"
+            }, data={
+                "form_type": "recover_customer_password",
+                "email": rand_acc_list[0],
+            }, proxies={"https": rand_proxy}, timeout=30)  # false for captcha
+
+            KITH_RESP = s.post("https://kith.com/account/login", headers={
+                "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                "Accept-Encoding": "gzip, deflate, br",
+                "Accept-Language": "en-US,en;q=0.9",
+                "Connection": "keep-alive",
+                "Content-Type": "application/x-www-form-urlencoded",
                 "Host": "kith.com",
                 "Origin": "https://kith.com",
-                "Referer": "https://kith.com/challenge",
+                "Referer": "https://kith.com/account/login?redirect=/pages/customer-raffle",
                 "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
-            }
-            resp = s.post('https://kith.com/account/login', headers=headers, data=payload, proxies={"https": rand_proxy}, timeout=30)
-            print("Successfully logged in with captcha.")
-            unlock_p(rand_proxy)
-            return s.cookies
-        else:  # no captcha required
-            print("Successfully logged in without captcha.")
-            unlock_p(rand_proxy)
-            return s.cookies
+            }, data={
+                "form_type": "customer_login",
+                "customer[email]": rand_acc_list[0],
+                "customer[password]": rand_acc_list[1],
+                "checkout_url": "/pages/customer-raffle"
+            }, proxies={"https": rand_proxy}, timeout=30)  # false for captcha
+            if (KITH_RESP.url == "https://kith.com/challenge") or (KITH_RESP.url == "https://kith.com/challenge/"):  # captcha required
+                r_c = captcha_harvester()
+                authtoken = grabauthkey(KITH_RESP.content)
+                payload = {
+                    "authenticity_token": authtoken,
+                    "g-recaptcha-response": r_c
+                }
+                headers = {
+                    "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8",
+                    "Accept-Encoding": "gzip, deflate, br",
+                    "Accept-Language": "en-US,en;q=0.9",
+                    "Host": "kith.com",
+                    "Origin": "https://kith.com",
+                    "Referer": "https://kith.com/challenge",
+                    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/66.0.3359.139 Safari/537.36"
+                }
+                resp = s.post('https://kith.com/account/login', headers=headers, data=payload, proxies={"https": rand_proxy}, timeout=30)
+                print("Successfully logged in with captcha.")
+                unlock_p(rand_proxy)
+                return s.cookies
+            else:  # no captcha required
+                print("Successfully logged in without captcha.")
+                unlock_p(rand_proxy)
+                return s.cookies
+    else:
+        return is_verified
 
 
 def error_restart(thread_driver, rand_acc_list):
@@ -142,50 +161,50 @@ def enter_raffle(accs_tuple, url):
     thread_driver.CreateHeadlessBrowser(driver_proxy)
     thread_driver.driver.get(url)
     while GLOBAL_VARIABLES["queue_"].qsize() > 0:
-        try:
-            print("Accounts left: " + str(GLOBAL_VARIABLES["queue_"].qsize()))
-            with GLOBAL_VARIABLES["q_lock_"]:
-                GLOBAL_VARIABLES["queue_"].get()
-            rand_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
-            if not rand_proxy in GLOBAL_VARIABLES["p_ll"]:
-                with GLOBAL_VARIABLES["p_lock_"]:
-                    GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
-                    print("Using proxy: " + str(rand_proxy))
-                rand_acc_list = choice(accs_tuple)
-                if not rand_acc_list in GLOBAL_VARIABLES["acc_ll"]:
-                    with GLOBAL_VARIABLES["acc_lock_"]:
-                        GLOBAL_VARIABLES["acc_ll"].append(rand_acc_list)
-                    log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
-                    for c in log_cookies_:
-                        thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
-                    thread_driver.driver.get(url)
-                    sleep(2)
-                    if (not thread_driver.checkentry()):
-                        rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
-                        thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
-                        if thread_driver.checkentry():
-                            print("Successfully entered raffle.")
-                            thread_driver.refresh()
-                            with GLOBAL_VARIABLES["w_lock"]:
-                                with open("config/Entered.txt", "a+") as etxt:
-                                    etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
-                                with open("config/Entered_Detailed.txt", "a+") as etxt:
-                                    etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
-                        else:
-                            print("Failed to enter raffle.")
-                            error_restart(thread_driver, rand_acc_list)
+        # try:
+        print("Accounts left: " + str(GLOBAL_VARIABLES["queue_"].qsize()))
+        with GLOBAL_VARIABLES["q_lock_"]:
+            GLOBAL_VARIABLES["queue_"].get()
+        rand_proxy = choice(readproxyfile("config/" + config["proxyfile"]))
+        if not rand_proxy in GLOBAL_VARIABLES["p_ll"]:
+            with GLOBAL_VARIABLES["p_lock_"]:
+                GLOBAL_VARIABLES["p_ll"].append(rand_proxy)
+                print("Using proxy: " + str(rand_proxy))
+            rand_acc_list = choice(accs_tuple)
+            with GLOBAL_VARIABLES["acc_lock_"]:
+                accs_tuple = accs_tuple[:accs_tuple.index(rand_acc_list)] + accs_tuple[(accs_tuple.index(rand_acc_list) + 1):]
+            log_cookies_ = get_log_cookie(rand_acc_list, rand_proxy)
+            if (log_cookies_ != False) and (log_cookies_ != "banned"):
+                for c in log_cookies_:
+                    thread_driver.driver.add_cookie({'name': c.name, 'value': c.value, 'path': c.path, 'expiry': c.expires})
+                thread_driver.driver.get(url)
+                sleep(2)
+                if (not thread_driver.checkentry()):
+                    rand_sz = GLOBAL_DATA[str(choice(range(2, 20)))]
+                    thread_driver.submit_entry(GLOBAL_VARIABLES, rand_sz)
+                    if thread_driver.checkentry():
+                        print("Successfully entered raffle.")
+                        thread_driver.refresh()
+                        with GLOBAL_VARIABLES["w_lock"]:
+                            with open("config/Entered.txt", "a+") as etxt:
+                                etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
+                            with open("config/Entered_Detailed.txt", "a+") as etxt:
+                                etxt.write("{}:{}:{}:{}\n".format(rand_acc_list[0], rand_acc_list[1], rand_sz, GLOBAL_VARIABLES["actual_loc"]))
                     else:
-                        print("Account already entered into raffle.")
+                        print("Failed to enter raffle.")
+                        error_restart(thread_driver, rand_acc_list)
                 else:
-                    with GLOBAL_VARIABLES["q_lock_"]:
-                        GLOBAL_VARIABLES["queue_"].put(1)
-            else:
-                with GLOBAL_VARIABLES["q_lock_"]:
-                    GLOBAL_VARIABLES["queue_"].put(1)
-        except:
-            print("Caught an error.")
+                    print("Account already entered into raffle.")
+            elif log_cookies_ == "banned":
+                with GLOBAL_VARIABLES["acc_lock_"]:
+                    accs_tuple = accs_tuple + tuple(rand_acc_list)
+        else:
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].put(1)
+        # except:
+        #     print("Caught an error.")
+        #     with GLOBAL_VARIABLES["q_lock_"]:
+        #         GLOBAL_VARIABLES["queue_"].put(1)
 
 
 def captcha_harvester():
