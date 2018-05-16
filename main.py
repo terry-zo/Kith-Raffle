@@ -192,10 +192,11 @@ def enter_raffle(accs_tuple, url):
             else:
                 print("Finished all accounts.")
                 sys.exit()
-        except:
+        except Exception:
             print("Caught an error.")
             with GLOBAL_VARIABLES["q_lock_"]:
                 GLOBAL_VARIABLES["queue_"].put(1)
+            accs_tuple = accs_tuple + tuple(rand_acc_list)
 
 
 def captcha_harvester():
