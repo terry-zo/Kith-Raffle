@@ -182,6 +182,8 @@ def enter_raffle(accs_tuple, url):
                                 raise
                         else:
                             log("Account already entered into raffle.", "Success")
+                            with open("config/Entered.txt", "a+") as etxt:
+                                etxt.write("{}:{}\n".format(rand_acc_list[0], rand_acc_list[1]))
                             unlock_p(rand_proxy)
                     elif log_cookies_ == "banned":
                         raise
